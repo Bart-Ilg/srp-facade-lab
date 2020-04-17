@@ -9,6 +9,8 @@ public class RpgPlayer {
 
     private final IGameEngine gameEngine;
 
+    private PlayerFacade facade;
+
     private int health;
 
     private int maxHealth;
@@ -26,18 +28,13 @@ public class RpgPlayer {
         carryingCapacity = MAX_CARRYING_CAPACITY;
     }
 
-    public void useItem(Item item) {
-        if (item.getName().equals("Stink Bomb"))
-        {
-            List<IEnemy> enemies = gameEngine.getEnemiesNear(this);
-
-            for (IEnemy enemy: enemies){
-                enemy.takeDamage(100);
-            }
-        }
+    public void useItem(Item item) 
+    {
+        facade.useItemFacade(item, gameEngine.getEnemiesNear(this));
     }
 
-    public boolean pickUpItem(Item item) {
+    public boolean pickUpItem(Item item) 
+    {
         int weight = calculateInventoryWeight();
         if (weight + item.getWeight() > carryingCapacity)
             return false;
@@ -52,15 +49,14 @@ public class RpgPlayer {
             if (health > maxHealth)
                 health = maxHealth;
 
-            if (item.getHeal() > 500) {
+            if (facade.GreenSwirlCheck(item)) {
                 gameEngine.playSpecialEffect("green_swirly");
             }
 
             return true;
         }
 
-        if (item.isRare())
-            gameEngine.playSpecialEffect("cool_swirly_particles");
+        facade.rarityEffectCheck(item, gameEngine);
 
         inventory.add(item);
 
@@ -75,12 +71,9 @@ public class RpgPlayer {
         }
     }
 
-    private boolean checkIfItemExistsInInventory(Item item) {
-        for (Item i: inventory) {
-            if (i.getId() == item.getId())
-                return true;
-        }
-        return false;
+    private boolean checkIfItemExistsInInventory(Item item) 
+    {
+        return facade.ItemInvCheck(item, inventory);
     }
 
     private int calculateInventoryWeight() {
@@ -97,6 +90,9 @@ public class RpgPlayer {
         }
 
         int damageToDeal = damage - armour;
+        if(calculateInventoryWeight() < (carryingCapacity/2))
+            damageToDeal = damageToDeal * 3/4;
+
         health -= damageToDeal;
 
         gameEngine.playSpecialEffect("lots_of_gore");
